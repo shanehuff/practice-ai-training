@@ -81,6 +81,10 @@ class TextModel {
     public function loadModel($filename) {
         $this->chain = unserialize(file_get_contents($filename));
     }
+
+public function getTrainedData() {
+  return $this->chain;
+}
 }
 
 // Create a new instance of the TextModel class
@@ -136,6 +140,7 @@ switch ($command) {
         $filename = $args[0];
         $model->loadModel($filename);
         echo "Model loaded from $filename.\n";
+var_dump($model->getTrainedData());
         break;
     default:
         echo "Error: Invalid command.\n";
