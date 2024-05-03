@@ -35,24 +35,34 @@ class TextModel {
     private function calculateSentenceTokensAndScores() {
         // Split the book content into sentences
         $sentences = preg_split('/[.?!]/', $this->bookContent);
-
-        // Imagine each word in the sentences as different Lego blocks.
+    
+        // Tokenize each sentence and count word frequencies
         foreach ($sentences as $sentence) {
-            $sentenceTokens[] = array_unique(preg_split('/\s+/', strtolower($sentence)));
-        }
-
-        // We count how many times each word appears in each sentence.
-        // Then, we give each word a score based on how rare it is across all sentences.
-        // We multiply these scores together to get a score for each sentence.
-        foreach ($sentenceTokens as $sentenceToken) {
+            $tokens = preg_split('/\s+/', strtolower($sentence));
+            $wordFreq = array_count_values($tokens);
+            $totalWords = count($tokens);
+    
+            // Calculate TF-IDF scores for each sentence
             $score = 0;
-            foreach ($questionTokens as $token) {
-                $tf = array_count_values($sentenceToken)[$token] ?? 0; // Count how many times the word appears in the sentence
-                $idf = log(count($sentenceTokens) / (1 + array_reduce($sentenceTokens, function ($carry, $item) use ($token) {
-                    return $carry + (in_array($token, $item) ? 1 : 0);
-                }, 0))); // Calculate how rare the word is across all sentences
-                $score += $tf * $idf; // Multiply these values together to get the score for the sentence
+            foreach ($wordFreq as $word => $freq) {
+                // Term frequency (TF): how often a word appears in a sentence
+                $tf = $freq / $totalWords;
+    
+                // Inverse Document Frequency (IDF): how rare the word is across all sentences
+                $numSentencesWithWord = 0;
+                foreach ($sentences as $s) {
+                    if (stripos($s, $word) !== false) {
+                        $numSentencesWithWord++;
+                    }
+                }
+                $idf = log(count($sentences) / (1 + $numSentencesWithWord));
+    
+                // TF-IDF score for the word in the sentence
+                $score += $tf * $idf;
             }
+    
+            // Save sentence tokens and score
+            $this->sentenceTokens[] = $tokens;
             $this->sentenceScores[] = $score;
         }
     }
