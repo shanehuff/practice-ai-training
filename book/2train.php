@@ -91,6 +91,7 @@ class TextModel {
         // Clear previously calculated sentence tokens and scores
         $this->sentenceTokens = [];
         $this->sentenceScores = [];
+        $this->calculateSentenceTokensAndScores();
     }
 
     public function saveModel($filename) {
