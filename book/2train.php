@@ -5,7 +5,7 @@ class TextModel {
     private $sentenceTokens;
     private $sentenceScores;
 
-    public function __construct($bookContent, $sentenceTokens = [], $sentenceScores = []) {
+    public function __construct($bookContent = [], $sentenceTokens = [], $sentenceScores = []) {
         $this->bookContent = $bookContent;
         $this->sentenceTokens = $sentenceTokens;
         $this->sentenceScores = $sentenceScores;
@@ -17,37 +17,47 @@ class TextModel {
             $this->calculateSentenceTokensAndScores();
         }
 
-        // Imagine each sentence in the book as a story chapter.
-        $sentences = preg_split('/[.?!]/', $this->bookContent);
-
-        // Imagine each word in the question and in the sentences as different Lego blocks.
+        // Tokenize the question
         $questionTokens = array_unique(preg_split('/\s+/', strtolower($question)));
 
-        // We find the sentences with the highest scores.
-        // These sentences are the most relevant to the question.
-        $relevantIndices = array_keys($this->sentenceScores, max($this->sentenceScores));
-        $relevantPassages = array_intersect_key($sentences, array_flip($relevantIndices));
+        // Find the most relevant passage to the question
+        $maxScore = -1;
+        $bestPassage = '';
+        foreach ($this->bookContent as $index => $sentence) {
+            // Calculate the score for this passage
+            $score = 0;
+            foreach ($questionTokens as $token) {
+                if (in_array($token, $this->sentenceTokens[$index])) {
+                    $score += $this->sentenceScores[$index];
+                }
+            }
+            // Update the best passage if this one has a higher score
+            if ($score > $maxScore) {
+                $maxScore = $score;
+                $bestPassage = $sentence;
+            }
+        }
 
-        // We return these relevant sentences as the answer.
-        return $relevantPassages;
+        // Return the most relevant passage
+        return [$bestPassage];
     }
 
     private function calculateSentenceTokensAndScores() {
         // Split the book content into sentences
         $sentences = preg_split('/[.?!]/', $this->bookContent);
-    
+
         // Tokenize each sentence and count word frequencies
         foreach ($sentences as $sentence) {
             $tokens = preg_split('/\s+/', strtolower($sentence));
             $wordFreq = array_count_values($tokens);
             $totalWords = count($tokens);
-    
+
             // Calculate TF-IDF scores for each sentence
             $score = 0;
             foreach ($wordFreq as $word => $freq) {
                 // Term frequency (TF): how often a word appears in a sentence
                 $tf = $freq / $totalWords;
-    
+
                 // Inverse Document Frequency (IDF): how rare the word is across all sentences
                 $numSentencesWithWord = 0;
                 foreach ($sentences as $s) {
@@ -56,15 +66,17 @@ class TextModel {
                     }
                 }
                 $idf = log(count($sentences) / (1 + $numSentencesWithWord));
-    
+
                 // TF-IDF score for the word in the sentence
                 $score += $tf * $idf;
             }
-    
+
             // Save sentence tokens and score
             $this->sentenceTokens[] = $tokens;
             $this->sentenceScores[] = $score;
         }
+        // Save book content
+        $this->bookContent = $sentences;
     }
 
     public function generateAnswer($passages) {
@@ -74,12 +86,11 @@ class TextModel {
 
     public function train($textData) {
         // Append the new text data to the existing book content.
-        $this->bookContent .= ' ' . $textData;
+        $this->bookContent[] = $textData;
 
         // Clear previously calculated sentence tokens and scores
         $this->sentenceTokens = [];
         $this->sentenceScores = [];
-        $this->calculateSentenceTokensAndScores();
     }
 
     public function saveModel($filename) {
