@@ -44,7 +44,7 @@ class TextModel {
 
     private function calculateSentenceTokensAndScores() {
         // Split the book content into sentences
-        $sentences = preg_split('/[.?!]/', $this->bookContent);
+        $sentences = preg_split('/[.?!]/', $this->bookContent[0]);
 
         // Tokenize each sentence and count word frequencies
         foreach ($sentences as $sentence) {
